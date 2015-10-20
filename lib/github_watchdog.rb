@@ -1,12 +1,10 @@
 #require "github_watchdog/version"
 require 'octokit'
 require 'logger'
-
+require 'slack-ruby-bot'
 
 logger = Logger.new File.new('/var/log/github_watchdog.log', 'a+')
 logger.info "Started github_watchdog"
-
-
 
 options={}
 File.open("/etc/github_watchdog.conf") do |f|
@@ -51,6 +49,19 @@ loop do
 		logger.info "Contributors are not the same"
 		logger.info "Contributors added: " + new_contributors.join(', ')
 		File.write("/var/dump.txt", contributors.join(' '))
+		#####
+		## I have no means of testing this slack code, I copied the samples given
+		## from https://github.com/dblock/slack-ruby-bot
+		## and I commented out my code so this will not explode when run.
+		## But the call should look something like this:
+		# slackbot = SlackRubyBot::Commands::Base.new()
+		# slackbot.send_message client, options['channel'], "New #{options['organization']}/#{options['repo']} contributors: "
+		#
+		# One caveat I should mention, I have not found an easy way to generate a 'client' object from
+		# the documentation.  If I had a slack server to test against, I imagine it would take me about
+		# one more hour to complete it.
+		#####
+
 	else
 		logger.info "Contributors are the same"
 	end
