@@ -1,5 +1,5 @@
 #require "github_watchdog/version"
-
+require 'octokit'
 #module GithubWatchdog
   # Your code goes here...
 #end
@@ -26,23 +26,33 @@ end
 # https://developer.github.com/v3/repos/#list-contributors
 # Please note that the contributor list is cached, so the data
 # can be hours old.  See above link for details.
-filecache = File.open("/var/dump.txt", 'w')
-contributors_prior = filecache.readline.split().sort!
+filecache = File.open("/var/dump.txt", 'r+')
+count = 0
+File.open(filecache) {|f| count = f.read.count("\n")}
+if count == 0
+	contributors_prior = []
+else
+	contributors_prior = filecache.readline.split().sort!
+end
+filecache.close()
+contributors = Octokit.contributors("#{options['organization']}/#{options['repo']}")
 
-contributors = Octokit.contributors('octokit/octokit.rb')
-
-loop do 
-	contributors_url = Octokit.contributors("#{options[:organization]}/#{options[:repo]}")
+loop do
+	contributors_url = Octokit.contributors("#{options['organization']}/#{options['repo']}")
 	contributors = []
 	contributors_url.each do |contrib|
 		contributors << contrib[:login]
 	end
 	contributors.sort!
 	if contributors_prior != contributors
+		new_contributors = contributors - contributors_prior
 		puts "Contributors are not the same"
+		puts "Contributors added: " + new_contributors.join(', ')
+		File.write("/var/dump.txt", contributors.join(' '))
 	else
 		puts "Contributors are the same"
 	end
+	contributors_prior = contributors
 	sleep(options['interval'].to_i)
 end
 
