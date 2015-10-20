@@ -1,13 +1,12 @@
 #require "github_watchdog/version"
 require 'octokit'
-#module GithubWatchdog
-  # Your code goes here...
-#end
+require 'logger'
 
-# There is a cooler way to do this with: http://daemons.rubyforge.org/
-# But this works for the trivial use case and the time constraints
 
-# https://github.com/octokit/octokit.rb
+logger = Logger.new File.new('/var/log/github_watchdog.log', 'a+')
+logger.info "Started github_watchdog"
+
+
 
 options={}
 File.open("/etc/github_watchdog.conf") do |f|
@@ -35,8 +34,11 @@ else
 	contributors_prior = filecache.readline.split().sort!
 end
 filecache.close()
+# https://github.com/octokit/octokit.rb
 contributors = Octokit.contributors("#{options['organization']}/#{options['repo']}")
 
+# There is a cooler way to do this with: http://daemons.rubyforge.org/
+# But this works for the trivial use case and the time constraints
 loop do
 	contributors_url = Octokit.contributors("#{options['organization']}/#{options['repo']}")
 	contributors = []
@@ -46,11 +48,11 @@ loop do
 	contributors.sort!
 	if contributors_prior != contributors
 		new_contributors = contributors - contributors_prior
-		puts "Contributors are not the same"
-		puts "Contributors added: " + new_contributors.join(', ')
+		logger.info "Contributors are not the same"
+		logger.info "Contributors added: " + new_contributors.join(', ')
 		File.write("/var/dump.txt", contributors.join(' '))
 	else
-		puts "Contributors are the same"
+		logger.info "Contributors are the same"
 	end
 	contributors_prior = contributors
 	sleep(options['interval'].to_i)
